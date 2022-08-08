@@ -2,9 +2,7 @@ package org.apache.hop.arrow.transforms.arrowencode;
 
 import org.apache.arrow.vector.*;
 import org.apache.hop.core.exception.HopException;
-import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowDataUtil;
-import org.apache.hop.core.row.value.ValueMetaInteger;
 import org.apache.hop.core.util.ArrowBufferAllocator;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -13,8 +11,6 @@ import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData> {
 
@@ -83,16 +79,19 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
       data.vectors = data.arrowSchema
               .getFields()
               .stream()
-              .map(field -> field.createVector(ArrowBufferAllocator.rootAllocator()))
-              .collect(Collectors.toList());
-      data.vectors.forEach(ValueVector::allocateNew); // XXX is this required?
+              .map(field -> {
+                ValueVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
+                vector.allocateNewSafe();
+                return vector;
+              })
+              .toArray(ValueVector[]::new);
     }
 
     // Add Row to the current batch of Vectors
     if (row != null) {
       for (int index : data.sourceFieldIndexes) {
         Object value = row[index];
-        ValueVector vector = data.vectors.get(index);
+        ValueVector vector = data.vectors[index];
 
         // XXX The mess...
         // TODO: Arrow List support
@@ -118,7 +117,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
     if ((row == null && data.count > 0) || data.count == batchSize) {
       Object[] outputRow = RowDataUtil.allocateRowData(data.outputRowMeta.size());
       outputRow[getInputRowMeta().size()] = data.vectors;
-      data.vectors = List.of();
+      data.vectors = new ValueVector[] {};
       putRow(data.outputRowMeta, outputRow);
     }
 

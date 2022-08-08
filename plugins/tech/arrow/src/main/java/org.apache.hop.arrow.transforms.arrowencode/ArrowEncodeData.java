@@ -25,5 +25,5 @@ public class ArrowEncodeData extends BaseTransformData implements ITransformData
   /** Number of batches processed. */
   public int batches = 0;
 
-  public List<ValueVector> vectors = List.of();
+  public ValueVector[] vectors = new ValueVector[] {};
 }

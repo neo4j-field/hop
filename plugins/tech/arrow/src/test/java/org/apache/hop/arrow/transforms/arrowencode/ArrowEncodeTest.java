@@ -73,18 +73,16 @@ public class ArrowEncodeTest {
         int index = outputRowSet.getRowMeta().indexOfValue("arrow");
         Assert.assertTrue("Should have a non-zero index", index > 0);
 
-        List<ValueVector> vectors = (List<ValueVector>) row[index];
-        Assert.assertEquals("Should have 2 vectors", 2, vectors.size());
+        ValueVector[] vectors = (ValueVector[]) row[index];
+        Assert.assertEquals("Should have 2 vectors", 2, vectors.length);
 
         Assert.assertEquals("First vector should be renamed age_out",
-                vectors.get(0).getName(), "age_out");
+                vectors[0].getName(), "age_out");
         Assert.assertEquals("First vector should be renamed name_out",
-                vectors.get(1).getName(), "name_out");
+                vectors[1].getName(), "name_out");
 
-        try {
-            vectors.forEach(ValueVector::close);
-        } catch (Exception e) {
-            Assert.fail("Failed to release vectors");
+        for (ValueVector vector : vectors) {
+            vector.close();
         }
     }
 

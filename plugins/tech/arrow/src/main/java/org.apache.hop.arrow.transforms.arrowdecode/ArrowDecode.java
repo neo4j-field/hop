@@ -86,16 +86,16 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       data.arrowValueMeta = (ValueMetaArrowVector) valueMeta;
     }
 
-    List<ValueVector> vectors = data.arrowValueMeta.getValueVectors(row[data.inputIndex]);
+    ValueVector[] vectors = (ValueVector[]) row[data.inputIndex];
 
-    if (vectors.isEmpty()) {
+    if (vectors == null || vectors.length == 0) {
       throw new HopException("No vectors provided");
     }
 
     // Convert vectors to rows.
     //
     // TODO track vector rowcount in metadata?
-    int rowCount = vectors.get(0).getValueCount();
+    int rowCount = vectors[0].getValueCount();
     if (rowCount == 0) {
       // XXX bail out?
       return true;
@@ -108,8 +108,8 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     for (int j = 0; j < vectorIndices.length; j++) {
       int index = -1;
 
-      for (int n = 0; n < vectors.size(); n++) {
-        String name = vectors.get(n).getName();
+      for (int n = 0; n < vectors.length; n++) {
+        String name = vectors[n].getName();
         if (name.equals(targetFields.get(j).getSourceField())) {
           index = n;
           break;
@@ -125,12 +125,14 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
 
     // Release vectors
     //
-    vectors.forEach(AutoCloseables::closeNoChecked);
+    for (ValueVector vector : vectors) {
+      vector.close();
+    }
 
     return true;
   }
 
-  private Object[] convertToRow(int rowNum, Object[] inputRow, List<ValueVector> vectors, int[] indices) {
+  private Object[] convertToRow(int rowNum, Object[] inputRow, ValueVector[] vectors, int[] indices) {
     Object[] outputRow = RowDataUtil.createResizedCopy(inputRow, data.outputRowMeta.size());
 
     // We overwrite the original Arrow object...
@@ -140,8 +142,7 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     // ...and append new fields.
     //
     int rowIndex = getInputRowMeta().size();
-    for (int index : indices) {
-      ValueVector vector = vectors.get(index);
+    for (ValueVector vector : vectors) {
       outputRow[rowIndex++] = vector.getObject(rowNum);
     }
 

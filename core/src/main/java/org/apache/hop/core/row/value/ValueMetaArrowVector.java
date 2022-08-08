@@ -6,7 +6,6 @@ import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.ipc.ArrowStreamReader;
 import org.apache.arrow.vector.ipc.ArrowStreamWriter;
-import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hop.core.exception.HopException;
@@ -23,7 +22,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 @ValueMetaPlugin(
     id = "21",
@@ -112,7 +110,7 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
     }
     xml.append(XmlHandler.closeTag(XML_META_TAG));
 
-    return super.getMetaXml();
+    return xml.toString();
   }
 
   @Override
@@ -209,7 +207,35 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
 
   @Override
   public Class<?> getNativeDataTypeClass() throws HopValueException {
-    return ArrowRecordBatch.class;
+    return ValueVector[].class;
+  }
+
+  @Override
+  public ValueMetaBase clone() {
+    return new ValueMetaArrowVector(this.name, this.schema);
+  }
+
+  @Override
+  public Object cloneValueData(Object object) throws HopValueException {
+    if (object == null) {
+      return null;
+    }
+
+    BufferAllocator allocator = ArrowBufferAllocator.rootAllocator();
+
+    ValueVector[] vectors = (ValueVector[]) object;
+    return Arrays
+            .stream(vectors)
+            .map(vector -> {
+              ValueVector clone = vector.getField().createVector(allocator);
+              // XXX This is inefficient, but safe for now.
+              for (int i = 0; i < vector.getValueCount(); i++) {
+                clone.copyFromSafe(i, i, vector);
+              }
+              clone.setValueCount(vector.getValueCount());
+              return clone;
+            })
+            .toArray(ValueVector[]::new);
   }
 
   public Schema getSchema() {
@@ -220,8 +246,4 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
     this.schema = schema;
   }
 
-  public List<ValueVector> getValueVectors(Object o) {
-    // TODO: validate o? what should we do here?
-    return (List<ValueVector>) o;
-  }
 }

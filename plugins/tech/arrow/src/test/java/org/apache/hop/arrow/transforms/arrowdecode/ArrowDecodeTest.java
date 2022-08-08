@@ -1,6 +1,7 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
 import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.hop.core.HopEnvironment;
 import org.apache.hop.core.IRowSet;
@@ -96,7 +97,7 @@ public class ArrowDecodeTest {
         inputRowMeta.addValueMeta(0, new ValueMetaArrowVector("arrow"));
 
         IRowSet inputRowSet = amh.getMockInputRowSet(
-                new Object[][] {{List.of(ageVector, nameVector)}});
+                new Object[][] {{new ValueVector[] {ageVector, nameVector}}});
         doReturn(inputRowMeta).when(inputRowSet).getRowMeta();
 
         return inputRowSet;
