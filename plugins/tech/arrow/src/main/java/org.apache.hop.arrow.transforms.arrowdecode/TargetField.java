@@ -26,6 +26,7 @@ public class TargetField {
   @HopMetadataProperty(key = "target_precision")
   private String targetPrecision;
 
+  public TargetField() {}
 
   public TargetField(String sourceField, String targetFieldName, String targetType, String targetFormat,
                      String targetLength, String targetPrecision) {
