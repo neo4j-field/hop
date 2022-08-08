@@ -1,8 +1,8 @@
 package org.apache.hop.core.row.value;
 
 import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.hop.core.HopClientEnvironment;
 import org.apache.hop.core.exception.HopValueException;
@@ -23,11 +23,11 @@ public class ValueMetaArrowVectorsTest {
     @Test
     public void testCloneData() throws HopValueException {
         BufferAllocator allocator = ArrowBufferAllocator.rootAllocator();
-        ValueVector[] vectors = new ValueVector[] {
+        FieldVector[] vectors = new FieldVector[] {
             new IntVector("a", allocator), new IntVector("b", allocator),
         };
 
-        for (ValueVector valueVector : vectors) {
+        for (FieldVector valueVector : vectors) {
             valueVector.allocateNewSafe();
             ((IntVector) valueVector).set(0, 42);
             valueVector.setValueCount(1);
@@ -37,19 +37,19 @@ public class ValueMetaArrowVectorsTest {
                 "test",
                 new Schema(Arrays
                         .stream(vectors)
-                        .map(ValueVector::getField)
+                        .map(FieldVector::getField)
                         .collect(Collectors.toList())));
 
-        ValueVector[] cloned = (ValueVector[]) valueMeta.cloneValueData(vectors);
+        FieldVector[] cloned = (FieldVector[]) valueMeta.cloneValueData(vectors);
         Assert.assertNotSame(vectors, cloned);
         Assert.assertEquals("a", cloned[0].getName());
         Assert.assertEquals("b", cloned[1].getName());
 
-        for (ValueVector vector : vectors) {
+        for (FieldVector vector : vectors) {
             Assert.assertEquals(42, vector.getObject(0));
             vector.close();
         }
-        for (ValueVector vector : cloned) {
+        for (FieldVector vector : cloned) {
             Assert.assertEquals(42, vector.getObject(0));
             vector.close();
         }
