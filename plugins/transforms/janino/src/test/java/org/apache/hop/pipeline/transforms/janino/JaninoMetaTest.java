@@ -33,7 +33,6 @@ import org.junit.Test;
 
 import java.util.*;
 
-@Ignore
 public class JaninoMetaTest {
   @ClassRule public static RestoreHopEngineEnvironment env = new RestoreHopEngineEnvironment();
 

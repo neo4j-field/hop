@@ -47,7 +47,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-@Ignore
 public class SalesforceInputMetaTest {
   @ClassRule public static RestoreHopEngineEnvironment env = new RestoreHopEngineEnvironment();
 
