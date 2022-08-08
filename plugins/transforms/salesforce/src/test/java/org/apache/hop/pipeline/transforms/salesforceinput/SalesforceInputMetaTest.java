@@ -40,7 +40,6 @@ import org.apache.hop.pipeline.transforms.salesforce.SalesforceMetaTest;
 import org.apache.hop.pipeline.transforms.salesforce.SalesforceTransformMeta;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
