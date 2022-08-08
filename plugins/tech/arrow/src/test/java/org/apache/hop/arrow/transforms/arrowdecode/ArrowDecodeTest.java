@@ -1,7 +1,7 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
 import org.apache.arrow.vector.BigIntVector;
-import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.hop.core.HopEnvironment;
 import org.apache.hop.core.IRowSet;
@@ -11,7 +11,7 @@ import org.apache.hop.core.logging.ILoggingObject;
 import org.apache.hop.core.plugins.PluginRegistry;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowMeta;
-import org.apache.hop.core.row.value.ValueMetaArrowVector;
+import org.apache.hop.core.row.value.ValueMetaArrowVectors;
 import org.apache.hop.core.util.ArrowBufferAllocator;
 import org.apache.hop.junit.rules.RestoreHopEngineEnvironment;
 import org.apache.hop.pipeline.transforms.mock.TransformMockHelper;
@@ -94,10 +94,10 @@ public class ArrowDecodeTest {
         nameVector.set(1, "Ten".getBytes(StandardCharsets.UTF_8));
         nameVector.setValueCount(2);
 
-        inputRowMeta.addValueMeta(0, new ValueMetaArrowVector("arrow"));
+        inputRowMeta.addValueMeta(0, new ValueMetaArrowVectors("arrow"));
 
         IRowSet inputRowSet = amh.getMockInputRowSet(
-                new Object[][] {{new ValueVector[] {ageVector, nameVector}}});
+                new Object[][] {{new FieldVector[] {ageVector, nameVector}}});
         doReturn(inputRowMeta).when(inputRowSet).getRowMeta();
 
         return inputRowSet;

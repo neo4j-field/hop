@@ -2,7 +2,6 @@ package org.apache.hop.core.row.value;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.ipc.ArrowStreamReader;
 import org.apache.arrow.vector.ipc.ArrowStreamWriter;
@@ -25,22 +24,22 @@ import java.util.Arrays;
 
 @ValueMetaPlugin(
     id = "21",
-    name = "Arrow Vector",
-    description = "A single Arrow Vector",
+    name = "Arrow Vectors",
+    description = "An array of Apache Arrow vectors",
     image = "images/arrow.svg")
-public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
+public class ValueMetaArrowVectors extends ValueMetaBase implements IValueMeta {
 
   private Schema schema;
 
-  public ValueMetaArrowVector() {
+  public ValueMetaArrowVectors() {
     super(null, IValueMeta.TYPE_ARROW);
   }
 
-  public ValueMetaArrowVector(String name) {
+  public ValueMetaArrowVectors(String name) {
     super(name, IValueMeta.TYPE_ARROW);
   }
 
-  public ValueMetaArrowVector(String name, Schema schema) {
+  public ValueMetaArrowVectors(String name, Schema schema) {
     this(name);
     this.schema = schema;
   }
@@ -48,9 +47,9 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
   @Override
   public String toStringMeta() {
     if (schema == null) {
-      return "Arrow Vector";
+      return "Arrow Vectors";
     }
-    return "Arrow Vector [" + schema + "]";
+    return "Arrow Vectors [" + schema + "]";
   }
 
   @Override
@@ -68,7 +67,7 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
         outputStream.writeUTF(schema.toJson());
       }
     } catch (Exception e) {
-      throw new HopFileException("Error writing Arrow record metadata", e);
+      throw new HopFileException("Error writing Arrow vector metadata", e);
     }
   }
 
@@ -88,7 +87,7 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
         schema = Schema.fromJSON(schemaJson);
       }
     } catch (Exception e) {
-      throw new HopFileException("Error read Arrow record metadata", e);
+      throw new HopFileException("Error read Arrow vector metadata", e);
     }
   }
 
@@ -127,7 +126,7 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
       }
     } catch (Exception e) {
       throw new HopException(
-          "Error encoding Avro schema as JSON in value metadata of field " + name, e);
+          "Error encoding Arrow vector schema as JSON in value metadata of field " + name, e);
     }
   }
 
@@ -207,12 +206,12 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
 
   @Override
   public Class<?> getNativeDataTypeClass() throws HopValueException {
-    return ValueVector[].class;
+    return FieldVector[].class;
   }
 
   @Override
   public ValueMetaBase clone() {
-    return new ValueMetaArrowVector(this.name, this.schema);
+    return new ValueMetaArrowVectors(this.name, this.schema);
   }
 
   @Override
@@ -223,11 +222,11 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
 
     BufferAllocator allocator = ArrowBufferAllocator.rootAllocator();
 
-    ValueVector[] vectors = (ValueVector[]) object;
+    FieldVector[] vectors = (FieldVector[]) object;
     return Arrays
             .stream(vectors)
             .map(vector -> {
-              ValueVector clone = vector.getField().createVector(allocator);
+              FieldVector clone = vector.getField().createVector(allocator);
               // XXX This is inefficient, but safe for now.
               for (int i = 0; i < vector.getValueCount(); i++) {
                 clone.copyFromSafe(i, i, vector);
@@ -235,7 +234,7 @@ public class ValueMetaArrowVector extends ValueMetaBase implements IValueMeta {
               clone.setValueCount(vector.getValueCount());
               return clone;
             })
-            .toArray(ValueVector[]::new);
+            .toArray(FieldVector[]::new);
   }
 
   public Schema getSchema() {

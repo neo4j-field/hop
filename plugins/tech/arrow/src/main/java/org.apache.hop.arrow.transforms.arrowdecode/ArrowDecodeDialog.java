@@ -6,7 +6,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
-import org.apache.hop.core.row.value.ValueMetaArrowVector;
+import org.apache.hop.core.row.value.ValueMetaArrowVectors;
 import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.core.util.StringUtil;
 import org.apache.hop.core.util.Utils;
@@ -27,8 +27,8 @@ import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.*;
 
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class ArrowDecodeDialog extends BaseTransformDialog implements ITransformDialog {
     private static final Class<?> PKG = ArrowDecodeMeta.class; // For Translator
@@ -271,7 +271,7 @@ public class ArrowDecodeDialog extends BaseTransformDialog implements ITransform
                 IRowMeta fields = pipelineMeta.getPrevTransformFields(variables, transformName);
                 IValueMeta valueMeta = fields.searchValueMeta(fieldName);
                 if (valueMeta != null && valueMeta.getType() == IValueMeta.TYPE_ARROW) {
-                    Schema schema = ((ValueMetaArrowVector) valueMeta).getSchema();
+                    Schema schema = ((ValueMetaArrowVectors) valueMeta).getSchema();
                     if (schema != null) {
                         for (Field field : schema.getFields()) {
                             fieldsMap.put(field.getName(), field);

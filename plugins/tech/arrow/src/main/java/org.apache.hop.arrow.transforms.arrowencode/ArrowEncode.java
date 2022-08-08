@@ -80,18 +80,18 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
               .getFields()
               .stream()
               .map(field -> {
-                ValueVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
+                FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
                 vector.allocateNewSafe();
                 return vector;
               })
-              .toArray(ValueVector[]::new);
+              .toArray(FieldVector[]::new);
     }
 
     // Add Row to the current batch of Vectors
     if (row != null) {
       for (int index : data.sourceFieldIndexes) {
         Object value = row[index];
-        ValueVector vector = data.vectors[index];
+        FieldVector vector = data.vectors[index];
 
         // XXX The mess...
         // TODO: Arrow List support
@@ -117,7 +117,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
     if ((row == null && data.count > 0) || data.count == batchSize) {
       Object[] outputRow = RowDataUtil.allocateRowData(data.outputRowMeta.size());
       outputRow[getInputRowMeta().size()] = data.vectors;
-      data.vectors = new ValueVector[] {};
+      data.vectors = new FieldVector[] {};
       putRow(data.outputRowMeta, outputRow);
     }
 

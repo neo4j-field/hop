@@ -1,13 +1,12 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
-import org.apache.arrow.util.AutoCloseables;
-import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowDataUtil;
-import org.apache.hop.core.row.value.ValueMetaArrowVector;
+import org.apache.hop.core.row.value.ValueMetaArrowVectors;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
@@ -76,17 +75,17 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
         throw new HopException("Unable to find Arrow source field: " + sourceFieldName);
       }
       IValueMeta valueMeta = getInputRowMeta().getValueMeta(data.inputIndex);
-      if (!(valueMeta instanceof ValueMetaArrowVector)) {
+      if (!(valueMeta instanceof ValueMetaArrowVectors)) {
         throw new HopException(
                 "We can only decode Arrow data types and field "
                         + sourceFieldName
                         + " is of type "
                         + valueMeta.getTypeDesc());
       }
-      data.arrowValueMeta = (ValueMetaArrowVector) valueMeta;
+      data.arrowValueMeta = (ValueMetaArrowVectors) valueMeta;
     }
 
-    ValueVector[] vectors = (ValueVector[]) row[data.inputIndex];
+    FieldVector[] vectors = (FieldVector[]) row[data.inputIndex];
 
     if (vectors == null || vectors.length == 0) {
       throw new HopException("No vectors provided");
@@ -125,14 +124,14 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
 
     // Release vectors
     //
-    for (ValueVector vector : vectors) {
+    for (FieldVector vector : vectors) {
       vector.close();
     }
 
     return true;
   }
 
-  private Object[] convertToRow(int rowNum, Object[] inputRow, ValueVector[] vectors, int[] indices) {
+  private Object[] convertToRow(int rowNum, Object[] inputRow, FieldVector[] vectors, int[] indices) {
     Object[] outputRow = RowDataUtil.createResizedCopy(inputRow, data.outputRowMeta.size());
 
     // We overwrite the original Arrow object...
@@ -142,7 +141,7 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     // ...and append new fields.
     //
     int rowIndex = getInputRowMeta().size();
-    for (ValueVector vector : vectors) {
+    for (FieldVector vector : vectors) {
       outputRow[rowIndex++] = vector.getObject(rowNum);
     }
 

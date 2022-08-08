@@ -1,6 +1,6 @@
 package org.apache.hop.arrow.transforms.arrowencode;
 
-import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.hop.core.IRowSet;
 import org.apache.hop.core.QueueRowSet;
 import org.apache.hop.core.exception.HopException;
@@ -73,7 +73,7 @@ public class ArrowEncodeTest {
         int index = outputRowSet.getRowMeta().indexOfValue("arrow");
         Assert.assertTrue("Should have a non-zero index", index > 0);
 
-        ValueVector[] vectors = (ValueVector[]) row[index];
+        FieldVector[] vectors = (FieldVector[]) row[index];
         Assert.assertEquals("Should have 2 vectors", 2, vectors.length);
 
         Assert.assertEquals("First vector should be renamed age_out",
@@ -81,7 +81,7 @@ public class ArrowEncodeTest {
         Assert.assertEquals("First vector should be renamed name_out",
                 vectors[1].getName(), "name_out");
 
-        for (ValueVector vector : vectors) {
+        for (FieldVector vector : vectors) {
             vector.close();
         }
     }

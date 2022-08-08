@@ -14,7 +14,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class ValueMetaArrowVectorTest {
+public class ValueMetaArrowVectorsTest {
     @BeforeClass
     public static void before() throws Exception {
         HopClientEnvironment.init();
@@ -33,7 +33,7 @@ public class ValueMetaArrowVectorTest {
             valueVector.setValueCount(1);
         }
 
-        ValueMetaArrowVector valueMeta = new ValueMetaArrowVector(
+        ValueMetaArrowVectors valueMeta = new ValueMetaArrowVectors(
                 "test",
                 new Schema(Arrays
                         .stream(vectors)

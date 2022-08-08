@@ -9,7 +9,7 @@ import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
-import org.apache.hop.core.row.value.ValueMetaArrowVector;
+import org.apache.hop.core.row.value.ValueMetaArrowVectors;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.metadata.api.HopMetadataProperty;
 import org.apache.hop.metadata.api.IHopMetadataProvider;
@@ -48,7 +48,7 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
 
     try {
       Schema schema = createArrowSchema(rowMeta, sourceFields);
-      ValueMetaArrowVector valueMeta = new ValueMetaArrowVector(variables.resolve(outputFieldName), schema);
+      ValueMetaArrowVectors valueMeta = new ValueMetaArrowVectors(variables.resolve(outputFieldName), schema);
       rowMeta.addValueMeta(valueMeta);
     } catch (Exception e) {
       throw new HopTransformException(
