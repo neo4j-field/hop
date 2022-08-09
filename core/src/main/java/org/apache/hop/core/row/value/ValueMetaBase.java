@@ -1924,6 +1924,10 @@ public class ValueMetaBase implements IValueMeta {
           }
           break;
 
+        case TYPE_ARROW:
+          string = object == null ? null : object.toString();
+          break;
+
         default:
           throw new HopValueException(toString() + MSG_UNKNOWN_TYPE + type + MSG_SPECIFIED);
       }
