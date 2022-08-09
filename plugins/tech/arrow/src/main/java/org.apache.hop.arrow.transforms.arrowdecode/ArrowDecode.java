@@ -3,15 +3,18 @@ package org.apache.hop.arrow.transforms.arrowdecode;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.row.value.ValueMetaArrowVectors;
+import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData> {
@@ -37,21 +40,6 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     super(transformMeta, meta, data, copyNr, pipelineMeta, pipeline);
   }
 
-  public static int getStandardHopType(Field field) {
-    ArrowType.ArrowTypeID typeId = field.getFieldType().getType().getTypeID();
-    switch (typeId) {
-      case Int:
-        return IValueMeta.TYPE_INTEGER;
-      case Utf8:
-      case LargeUtf8:
-        return IValueMeta.TYPE_STRING;
-      case FloatingPoint:
-        return IValueMeta.TYPE_NUMBER;
-      default:
-        // TODO: additional Arrow to Hop mappings
-        return IValueMeta.TYPE_NONE;
-    }
-  }
 
   @Override
   public boolean processRow() throws HopException {
@@ -64,8 +52,6 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     // Setup a schema?
     //
     if (first) {
-      first = false;
-
       data.outputRowMeta = getInputRowMeta().clone();
       meta.getFields(data.outputRowMeta, getTransformName(), null, null, this, metadataProvider);
 
@@ -83,42 +69,43 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
                         + valueMeta.getTypeDesc());
       }
       data.arrowValueMeta = (ValueMetaArrowVectors) valueMeta;
+      data.vectorIndices = new int[meta.getTargetFields().size()];
     }
 
     FieldVector[] vectors = (FieldVector[]) row[data.inputIndex];
-
     if (vectors == null || vectors.length == 0) {
       throw new HopException("No vectors provided");
     }
-
-    // Convert vectors to rows.
-    //
-    // TODO track vector rowcount in metadata?
     int rowCount = vectors[0].getValueCount();
     if (rowCount == 0) {
       // XXX bail out?
-      return true;
+      return false;
     }
 
-    // Build a mapping between the incoming vectors and the outgoing fields
-    List<TargetField> targetFields = meta.getTargetFields();
-    int[] vectorIndices = new int[targetFields.size()];
+    // Build a mapping between the incoming vectors and the outgoing fields if this
+    // is our first batch.
+    //
+    /*
+    if (first) {
+      first = false;
+      for (int j = 0; j < data.vectorIndices.length; j++) {
+        int index = -1;
 
-    for (int j = 0; j < vectorIndices.length; j++) {
-      int index = -1;
-
-      for (int n = 0; n < vectors.length; n++) {
-        String name = vectors[n].getName();
-        if (name.equals(targetFields.get(j).getSourceField())) {
-          index = n;
-          break;
+        for (int n = 0; n < vectors.length; n++) {
+          String vectorName = vectors[n].getName();
+          String srcFieldName = resolve(meta.get)
+          if (name.equals(meta.getTargetFields().get(j).getSourceField())) {
+            index = n;
+            break;
+          }
         }
+        data.vectorIndices[j] = index;
       }
-      vectorIndices[j] = index;
-    }
+    }*/
 
+    //
     for (int i = 0; i < rowCount; i++) {
-      Object[] outputRow = convertToRow(i, row, vectors, vectorIndices);
+      Object[] outputRow = convertToRow(i, row, vectors, data.vectorIndices);
       putRow(data.outputRowMeta, outputRow);
     }
 
@@ -128,23 +115,65 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       vector.close();
     }
 
+    logBasic("decoded " + rowCount + " rows from Arrow vectors");
+
     return true;
   }
 
-  private Object[] convertToRow(int rowNum, Object[] inputRow, FieldVector[] vectors, int[] indices) {
+  /**
+   * Generate a Hop row from a row-based slice across the vectors.
+   *
+   * @param rowNum row index in the Arrow Vectors
+   * @param inputRow incoming Hop row
+   * @param vectors array of Arrow Vectors
+   * @param indices int array mapping of...
+   * @return new Hop row of Objects
+   */
+  private Object[] convertToRow(int rowNum, Object[] inputRow, FieldVector[] vectors, int[] indices) throws HopException {
     Object[] outputRow = RowDataUtil.createResizedCopy(inputRow, data.outputRowMeta.size());
-
-    // We overwrite the original Arrow object...
-    //
-    outputRow[data.inputIndex] = List.of(); // XXX use null?
 
     // ...and append new fields.
     //
     int rowIndex = getInputRowMeta().size();
-    for (FieldVector vector : vectors) {
-      outputRow[rowIndex++] = vector.getObject(rowNum);
+
+    for (TargetField targetField : meta.getTargetFields()) {
+      String srcFieldName = resolve(targetField.getSourceField());
+
+      // XXX This section is redundantly called.
+      FieldVector vector = Arrays.stream(vectors)
+              .filter(v -> v.getName().equalsIgnoreCase(srcFieldName))
+              .findFirst()
+              .get(); // XXX yolo
+      Object hopValue = vector.getObject(rowNum);
+      IValueMeta standardValueMeta =
+              ValueMetaFactory.createValueMeta("standard", getStandardHopType(vector.getField()));
+      IValueMeta targetValueMeta = targetField.createTargetValueMeta(this);
+      standardValueMeta.setConversionMask(targetValueMeta.getConversionMask());
+
+      outputRow[rowIndex++] = targetValueMeta.convertData(standardValueMeta, hopValue);
     }
 
+    // We overwrite the original Arrow object...
+    //
+    outputRow[data.inputIndex] = new FieldVector[0]; // XXX use null?
+
     return outputRow;
+  }
+
+  public static int getStandardHopType(Field field) throws HopException {
+    ArrowType.ArrowTypeID typeId = field.getFieldType().getType().getTypeID();
+    switch (typeId) {
+      case Int:
+        return IValueMeta.TYPE_INTEGER;
+      case Utf8:
+      case LargeUtf8:
+        return IValueMeta.TYPE_STRING;
+      case FloatingPoint:
+        return IValueMeta.TYPE_NUMBER;
+      case Bool:
+        return IValueMeta.TYPE_BOOLEAN;
+      default:
+        throw new HopException("Arrow type " + typeId + " is not handled yet.");
+    }
   }
 }

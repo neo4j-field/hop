@@ -134,14 +134,6 @@ public class ArrowDecodeDialog extends BaseTransformDialog implements ITransform
                                 false,
                                 false),
                         new ColumnInfo(
-                                BaseMessages.getString(PKG, "ArrowDecodeDialog.Fields.Column.SourceType"),
-                                ColumnInfo.COLUMN_TYPE_CCOMBO,
-                                new String[] {
-                                        "String", "Int", "Long", "Float", "Double", "Boolean", "Bytes", "Null", "Record",
-                                        "Enum", "Array", "Map", "Union", "Fixed"
-                                },
-                                false),
-                        new ColumnInfo(
                                 BaseMessages.getString(PKG, "ArrowDecodeDialog.Fields.Column.TargetField"),
                                 ColumnInfo.COLUMN_TYPE_TEXT,
                                 false,

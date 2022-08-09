@@ -11,4 +11,6 @@ public class ArrowDecodeData extends BaseTransformData implements ITransformData
   public int inputIndex;
 
   public ValueMetaArrowVectors arrowValueMeta;
+
+  public int[] vectorIndices = new int[0];
 }
