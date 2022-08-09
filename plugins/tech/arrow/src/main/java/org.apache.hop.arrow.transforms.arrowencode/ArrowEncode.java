@@ -1,5 +1,8 @@
 package org.apache.hop.arrow.transforms.arrowencode;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import org.apache.arrow.vector.*;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
@@ -12,10 +15,6 @@ import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData> {
 
   private int batchSize = 10_000;
@@ -25,11 +24,11 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
    *
    * @param transformMeta The TransformMeta object to run.
    * @param meta
-   * @param data          the data object to store temporary data, database connections, caches, result sets,
-   *                      hashtables etc.
-   * @param copyNr        The copynumber for this transform.
-   * @param pipelineMeta  The PipelineMeta of which the transform transformMeta is part of.
-   * @param pipeline      The (running) pipeline to obtain information shared among the transforms.
+   * @param data the data object to store temporary data, database connections, caches, result sets,
+   *     hashtables etc.
+   * @param copyNr The copynumber for this transform.
+   * @param pipelineMeta The PipelineMeta of which the transform transformMeta is part of.
+   * @param pipeline The (running) pipeline to obtain information shared among the transforms.
    */
   public ArrowEncode(
       TransformMeta transformMeta,
@@ -99,15 +98,15 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
   }
 
   private void initializeVectors() {
-    data.vectors = data.arrowSchema
-            .getFields()
-            .stream()
-            .map(field -> {
-              FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
-              vector.setInitialCapacity(batchSize);
-              vector.allocateNewSafe();
-              return vector;
-            })
+    data.vectors =
+        data.arrowSchema.getFields().stream()
+            .map(
+                field -> {
+                  FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
+                  vector.setInitialCapacity(batchSize);
+                  vector.allocateNewSafe();
+                  return vector;
+                })
             .toArray(FieldVector[]::new);
     data.count = 0;
   }
@@ -128,10 +127,11 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
       } else if (vector instanceof Float8Vector) {
         ((Float8Vector) vector).set(data.count, rowMeta.getNumber(row, index));
       } else if (vector instanceof VarCharVector) {
-        ((VarCharVector) vector).set(data.count, rowMeta.getString(row, index)
-                .getBytes(StandardCharsets.UTF_8));
+        ((VarCharVector) vector)
+            .set(data.count, rowMeta.getString(row, index).getBytes(StandardCharsets.UTF_8));
       } else {
-        throw new HopValueException(this + " - encountered unsupported vector type: " + vector.getClass());
+        throw new HopValueException(
+            this + " - encountered unsupported vector type: " + vector.getClass());
       }
     }
     data.count++;

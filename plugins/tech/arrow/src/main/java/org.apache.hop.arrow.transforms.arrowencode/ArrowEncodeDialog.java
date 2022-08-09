@@ -28,11 +28,12 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
   private TextVar wOutputField;
   private TableView wFields;
 
-  public ArrowEncodeDialog(Shell parent,
-                           IVariables variables,
-                           Object baseTransformMeta,
-                           PipelineMeta pipelineMeta,
-                           String transformName) {
+  public ArrowEncodeDialog(
+      Shell parent,
+      IVariables variables,
+      Object baseTransformMeta,
+      PipelineMeta pipelineMeta,
+      String transformName) {
     super(parent, variables, (BaseTransformMeta) baseTransformMeta, pipelineMeta, transformName);
 
     input = (ArrowEncodeMeta) baseTransformMeta;
@@ -117,16 +118,16 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
 
     ColumnInfo[] fieldsColumns =
         new ColumnInfo[] {
-            new ColumnInfo(
-                BaseMessages.getString(PKG, "ArrowEncodeDialog.Fields.Column.SourceField"),
-                ColumnInfo.COLUMN_TYPE_TEXT,
-                false,
-                false),
-            new ColumnInfo(
-                BaseMessages.getString(PKG, "ArrowEncodeDialog.Fields.Column.TargetField"),
-                ColumnInfo.COLUMN_TYPE_TEXT,
-                false,
-                false),
+          new ColumnInfo(
+              BaseMessages.getString(PKG, "ArrowEncodeDialog.Fields.Column.SourceField"),
+              ColumnInfo.COLUMN_TYPE_TEXT,
+              false,
+              false),
+          new ColumnInfo(
+              BaseMessages.getString(PKG, "ArrowEncodeDialog.Fields.Column.TargetField"),
+              ColumnInfo.COLUMN_TYPE_TEXT,
+              false,
+              false),
         };
 
     wFields =

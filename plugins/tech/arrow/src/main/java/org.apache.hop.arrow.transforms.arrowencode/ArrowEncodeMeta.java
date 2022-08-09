@@ -1,5 +1,7 @@
 package org.apache.hop.arrow.transforms.arrowencode;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -16,9 +18,6 @@ import org.apache.hop.metadata.api.IHopMetadataProvider;
 import org.apache.hop.pipeline.transform.BaseTransformMeta;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Transform(
     id = "ArrowEncode",
     name = "Arrow Encode",
@@ -26,8 +25,7 @@ import java.util.List;
     image = "arrow_encode.svg",
     categoryDescription = "i18n:org.apache.hop.pipeline.transform:BaseTransform.Category.Transform",
     documentationUrl = "/pipeline/transforms/arrow-encode.html",
-    keywords = "i18n::ArrowEncodeMeta.keyword"
-)
+    keywords = "i18n::ArrowEncodeMeta.keyword")
 public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeData> {
   private static final Class<?> PKG = ArrowEncodeMeta.class;
 
@@ -44,11 +42,13 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
       IRowMeta[] info,
       TransformMeta nextTransform,
       IVariables variables,
-      IHopMetadataProvider metadataProvider) throws HopTransformException {
+      IHopMetadataProvider metadataProvider)
+      throws HopTransformException {
 
     try {
       Schema schema = createArrowSchema(rowMeta, sourceFields);
-      ValueMetaArrowVectors valueMeta = new ValueMetaArrowVectors(variables.resolve(outputFieldName), schema);
+      ValueMetaArrowVectors valueMeta =
+          new ValueMetaArrowVectors(variables.resolve(outputFieldName), schema);
       rowMeta.addValueMeta(valueMeta);
     } catch (Exception e) {
       throw new HopTransformException(
@@ -56,7 +56,8 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
     }
   }
 
-  public Schema createArrowSchema(IRowMeta inputRowMeta, List<SourceField> sourceFields) throws HopException {
+  public Schema createArrowSchema(IRowMeta inputRowMeta, List<SourceField> sourceFields)
+      throws HopException {
     List<Field> arrowFields = new ArrayList<>(sourceFields.size());
 
     for (int i = 0; i < sourceFields.size(); i++) {
@@ -65,7 +66,7 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
 
       ArrowType type;
       switch (valueMeta.getType()) {
-        // TODO broaden value type support
+          // TODO broaden value type support
         case IValueMeta.TYPE_INTEGER:
           // TODO int field precision and sign
           type = new ArrowType.Int(64, true);
@@ -74,7 +75,8 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
           type = new ArrowType.Utf8();
           break;
         default:
-          throw new HopException("Writing Hop data type '" + valueMeta.getTypeDesc() + "' to Arrow is not supported");
+          throw new HopException(
+              "Writing Hop data type '" + valueMeta.getTypeDesc() + "' to Arrow is not supported");
       }
 
       // Nested types (i.e. with children) are not currently supported.
@@ -100,5 +102,4 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
   public void setSourceFields(List<SourceField> sourceFields) {
     this.sourceFields = sourceFields;
   }
-
 }

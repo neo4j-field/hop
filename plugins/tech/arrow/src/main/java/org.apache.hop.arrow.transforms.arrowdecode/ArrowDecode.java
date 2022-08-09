@@ -1,5 +1,7 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -12,32 +14,27 @@ import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
-import java.lang.ref.WeakReference;
-import java.util.HashMap;
-
 public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData> {
   /**
    * Encode Arrow RecordBatch into Hop Rows.
    *
    * @param transformMeta The TransformMeta object to run.
-   * @param meta          the meta object
-   * @param data          the data object to store temporary data, database connections, caches, result sets,
-   *                      hashtables etc.
-   * @param copyNr        The copynumber for this transform.
-   * @param pipelineMeta  The PipelineMeta of which the transform transformMeta is part of.
-   * @param pipeline      The (running) pipeline to obtain information shared among the transforms.
+   * @param meta the meta object
+   * @param data the data object to store temporary data, database connections, caches, result sets,
+   *     hashtables etc.
+   * @param copyNr The copynumber for this transform.
+   * @param pipelineMeta The PipelineMeta of which the transform transformMeta is part of.
+   * @param pipeline The (running) pipeline to obtain information shared among the transforms.
    */
   public ArrowDecode(
-    TransformMeta transformMeta,
-    ArrowDecodeMeta meta,
-    ArrowDecodeData data,
-    int copyNr,
-    PipelineMeta pipelineMeta,
-    Pipeline pipeline
-  ) {
+      TransformMeta transformMeta,
+      ArrowDecodeMeta meta,
+      ArrowDecodeData data,
+      int copyNr,
+      PipelineMeta pipelineMeta,
+      Pipeline pipeline) {
     super(transformMeta, meta, data, copyNr, pipelineMeta, pipeline);
   }
-
 
   @Override
   public boolean processRow() throws HopException {
@@ -61,10 +58,10 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       IValueMeta valueMeta = getInputRowMeta().getValueMeta(data.inputIndex);
       if (!(valueMeta instanceof ValueMetaArrowVectors)) {
         throw new HopException(
-                "We can only decode Arrow data types and field "
-                        + sourceFieldName
-                        + " is of type "
-                        + valueMeta.getTypeDesc());
+            "We can only decode Arrow data types and field "
+                + sourceFieldName
+                + " is of type "
+                + valueMeta.getTypeDesc());
       }
       data.arrowValueMeta = (ValueMetaArrowVectors) valueMeta;
       data.vectorMapping = new HashMap<>();
@@ -138,11 +135,8 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
 
       log.logDetailed("decoding row " + rowNum + " of " + srcFieldName + " to " + outFieldName);
 
-      FieldVector vector = data.vectorMapping
-              .getOrDefault(
-                      srcFieldName,
-                      new WeakReference<>(null))
-              .get();
+      FieldVector vector =
+          data.vectorMapping.getOrDefault(srcFieldName, new WeakReference<>(null)).get();
       if (vector == null) {
         throw new HopException("Failed to find source field " + srcFieldName + " in vector map");
       }
