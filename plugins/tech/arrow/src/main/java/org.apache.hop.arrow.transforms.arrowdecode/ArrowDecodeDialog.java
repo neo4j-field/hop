@@ -251,6 +251,9 @@ public class ArrowDecodeDialog extends BaseTransformDialog implements ITransform
   }
 
   private void getFields() {
+    //////////////////////////////////////
+    // TODO: This is all busted! FIX ME!
+
     try {
 
       Map<String, Field> fieldsMap = new HashMap<>();
