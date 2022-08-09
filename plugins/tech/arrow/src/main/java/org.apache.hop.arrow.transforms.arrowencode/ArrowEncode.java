@@ -2,6 +2,7 @@ package org.apache.hop.arrow.transforms.arrowencode;
 
 import org.apache.arrow.vector.*;
 import org.apache.hop.core.exception.HopException;
+import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.util.ArrowBufferAllocator;
 import org.apache.hop.pipeline.Pipeline;
@@ -41,10 +42,20 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
   public boolean processRow() throws HopException {
     Object[] row = getRow();
 
+    // Last row?
+    if (row == null) {
+      if (data.count > 0) {
+        flush();
+      }
+      setOutputDone();
+      return false;
+    }
+
     // Either we're operating on our first row or the start of a new batch.
     //
-    if (first || data.count == batchSize) {
+    if (first) {
       first = false;
+
       // Initialize output row.
       //
       data.outputRowMeta = getInputRowMeta().clone();
@@ -69,62 +80,68 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
         log.logDetailed("Schema: " + data.arrowSchema);
       }
 
-      // Initialize batch state tracking.
-      //
-      data.count = 0;
+      initializeVectors();
       data.batches = 0;
-
-      // Initialize Arrow Vectors.
-      //
-      data.vectors = data.arrowSchema
-              .getFields()
-              .stream()
-              .map(field -> {
-                FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
-                vector.allocateNewSafe();
-                return vector;
-              })
-              .toArray(FieldVector[]::new);
     }
 
     // Add Row to the current batch of Vectors
-    if (row != null) {
-      for (int index : data.sourceFieldIndexes) {
-        Object value = row[index];
-        FieldVector vector = data.vectors[index];
+    append(row);
 
-        // XXX The mess...
-        // TODO: Arrow List support
-        if (vector instanceof IntVector) {
-          ((IntVector) vector).set(index, (int) value);
-        } else if (vector instanceof BigIntVector) {
-          ((BigIntVector) vector).set(index, (long) value);
-        } else if (vector instanceof Float4Vector) {
-          ((Float4Vector) vector).set(index, (float) value);
-        } else if (vector instanceof Float8Vector) {
-          ((Float8Vector) vector).set(index, (double) value);
-        } else if (vector instanceof VarCharVector && value != null) {
-          ((VarCharVector) vector).setSafe(index, ((String) value).getBytes(StandardCharsets.UTF_8));
-        } else {
-          throw new HopException(this + " - encountered unsupported vector type: " + vector.getClass());
-        }
-      }
-      data.count++;
-    }
-
-    // Flush if we're at the limit.
+    // Flush and reinitialize if we're at the limit.
     //
-    if ((row == null && data.count > 0) || data.count == batchSize) {
-      Object[] outputRow = RowDataUtil.allocateRowData(data.outputRowMeta.size());
-      outputRow[getInputRowMeta().size()] = data.vectors;
-      data.vectors = new FieldVector[] {};
-      putRow(data.outputRowMeta, outputRow);
+    if (data.count == batchSize) {
+      flush();
+      initializeVectors();
     }
 
-    if (row == null) {
-      setOutputDone();
-      return false;
-    }
     return true;
+  }
+
+  private void initializeVectors() {
+    data.vectors = data.arrowSchema
+            .getFields()
+            .stream()
+            .map(field -> {
+              FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
+              vector.allocateNewSafe();
+              return vector;
+            })
+            .toArray(FieldVector[]::new);
+    data.count = 0;
+  }
+
+  private void append(Object[] row) throws HopTransformException {
+    for (int index : data.sourceFieldIndexes) {
+      Object value = row[index];
+      FieldVector vector = data.vectors[index];
+
+      // XXX The mess...
+      // TODO: Arrow List support
+      if (vector instanceof IntVector) {
+        ((IntVector) vector).set(index, (int) value);
+      } else if (vector instanceof BigIntVector) {
+        ((BigIntVector) vector).set(index, (long) value);
+      } else if (vector instanceof Float4Vector) {
+        ((Float4Vector) vector).set(index, (float) value);
+      } else if (vector instanceof Float8Vector) {
+        ((Float8Vector) vector).set(index, (double) value);
+      } else if (vector instanceof VarCharVector && value != null) {
+        ((VarCharVector) vector).setSafe(index, ((String) value).getBytes(StandardCharsets.UTF_8));
+      } else {
+        throw new HopTransformException(this + " - encountered unsupported vector type: " + vector.getClass());
+      }
+    }
+    data.count++;
+  }
+
+  private void flush() throws HopTransformException {
+    Object[] outputRow = RowDataUtil.allocateRowData(data.outputRowMeta.size());
+    outputRow[getInputRowMeta().size()] = data.vectors;
+    data.vectors = new FieldVector[] {};
+
+    putRow(data.outputRowMeta, outputRow);
+
+    data.count = 0;
+    data.batches++;
   }
 }
