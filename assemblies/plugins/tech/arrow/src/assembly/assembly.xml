@@ -46,25 +46,5 @@
                 <include>org.apache.hop:hop-plugins-tech-arrow:jar</include>
             </includes>
         </dependencySet>
-        <dependencySet>
-            <outputDirectory>lib</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-            <scope>runtime</scope>
-            <includes>
-                <!-- Apache Arrow -->
-                <include>org.apache.arrow:arrow-vector:jar</include>
-                <include>org.apache.arrow:arrow-format:jar</include>
-                <include>org.apache.arrow:arrow-memory-core:jar</include>
-                <include>org.apache.arrow:arrow-memory-netty:jar</include>
-                <!-- 3rd party runtime dependencies -->
-                <include>com.google.flatbuffers:flatbuffers-java:jar</include>
-                <include>com.fasterxml.jackson.core:jackson-core:jar</include>
-                <include>com.fasterxml.jackson.core:jackson-annotations:jar</include>
-                <include>com.fasterxml.jackson.core:jackson-databind:jar</include>
-                <include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar</include>
-                <include>io.netty:netty-buffer:jar</include>
-                <include>org.slf4j:slf4j-api:jar</include>
-            </includes>
-        </dependencySet>
     </dependencySets>
 </assembly>
