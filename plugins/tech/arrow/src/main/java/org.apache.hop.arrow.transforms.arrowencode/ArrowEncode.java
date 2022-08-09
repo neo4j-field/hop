@@ -3,6 +3,8 @@ package org.apache.hop.arrow.transforms.arrowencode;
 import org.apache.arrow.vector.*;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
+import org.apache.hop.core.exception.HopValueException;
+import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.util.ArrowBufferAllocator;
 import org.apache.hop.pipeline.Pipeline;
@@ -12,6 +14,7 @@ import org.apache.hop.pipeline.transform.TransformMeta;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData> {
 
@@ -110,37 +113,45 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
     data.count = 0;
   }
 
-  private void append(Object[] row) throws HopTransformException {
+  private void append(Object[] row) throws HopValueException {
+    IRowMeta rowMeta = getInputRowMeta();
+
     for (int index : data.sourceFieldIndexes) {
-      Object value = row[index];
       FieldVector vector = data.vectors[index];
 
       // XXX The mess...
       // TODO: Arrow List support
       if (vector instanceof IntVector) {
-        ((IntVector) vector).set(index, (int) value);
+        ((IntVector) vector).set(index, rowMeta.getInteger(row, index).intValue());
       } else if (vector instanceof BigIntVector) {
-        ((BigIntVector) vector).set(index, (long) value);
+        ((BigIntVector) vector).set(index, rowMeta.getInteger(row, index));
       } else if (vector instanceof Float4Vector) {
-        ((Float4Vector) vector).set(index, (float) value);
+        ((Float4Vector) vector).set(index, rowMeta.getNumber(row, index).floatValue());
       } else if (vector instanceof Float8Vector) {
-        ((Float8Vector) vector).set(index, (double) value);
-      } else if (vector instanceof VarCharVector && value != null) {
-        ((VarCharVector) vector).setSafe(index, ((String) value).getBytes(StandardCharsets.UTF_8));
+        ((Float8Vector) vector).set(index, rowMeta.getNumber(row, index));
+      } else if (vector instanceof VarCharVector) {
+        ((VarCharVector) vector).set(index, rowMeta.getString(row, index)
+                .getBytes(StandardCharsets.UTF_8));
       } else {
-        throw new HopTransformException(this + " - encountered unsupported vector type: " + vector.getClass());
+        throw new HopValueException(this + " - encountered unsupported vector type: " + vector.getClass());
       }
     }
     data.count++;
   }
 
   private void flush() throws HopTransformException {
+    // Finalize the vectors by setting their value counts
+    Arrays.stream(data.vectors).forEach(v -> v.setValueCount(data.count));
+
+    // Send the vectors on their merry way
     Object[] outputRow = RowDataUtil.allocateRowData(data.outputRowMeta.size());
     outputRow[getInputRowMeta().size()] = data.vectors;
     data.vectors = new FieldVector[] {};
-
     putRow(data.outputRowMeta, outputRow);
 
+    logBasic("encoded " + data.count + " rows into Arrow Vectors");
+
+    // Prepare for the next batch
     data.count = 0;
     data.batches++;
   }
