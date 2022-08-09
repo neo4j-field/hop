@@ -79,9 +79,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
       // Build the Arrow schema.
       //
       data.arrowSchema = meta.createArrowSchema(getInputRowMeta(), meta.getSourceFields());
-      if (log.isDetailed()) {
-        log.logDetailed("Schema: " + data.arrowSchema);
-      }
+      log.logDetailed("Schema: " + data.arrowSchema);
 
       initializeVectors();
       data.batches = 0;
@@ -106,6 +104,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
             .stream()
             .map(field -> {
               FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
+              vector.setInitialCapacity(batchSize);
               vector.allocateNewSafe();
               return vector;
             })
@@ -119,18 +118,17 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
     for (int index : data.sourceFieldIndexes) {
       FieldVector vector = data.vectors[index];
 
-      // XXX The mess...
       // TODO: Arrow List support
       if (vector instanceof IntVector) {
-        ((IntVector) vector).set(index, rowMeta.getInteger(row, index).intValue());
+        ((IntVector) vector).set(data.count, rowMeta.getInteger(row, index).intValue());
       } else if (vector instanceof BigIntVector) {
-        ((BigIntVector) vector).set(index, rowMeta.getInteger(row, index));
+        ((BigIntVector) vector).set(data.count, rowMeta.getInteger(row, index));
       } else if (vector instanceof Float4Vector) {
-        ((Float4Vector) vector).set(index, rowMeta.getNumber(row, index).floatValue());
+        ((Float4Vector) vector).set(data.count, rowMeta.getNumber(row, index).floatValue());
       } else if (vector instanceof Float8Vector) {
-        ((Float8Vector) vector).set(index, rowMeta.getNumber(row, index));
+        ((Float8Vector) vector).set(data.count, rowMeta.getNumber(row, index));
       } else if (vector instanceof VarCharVector) {
-        ((VarCharVector) vector).set(index, rowMeta.getString(row, index)
+        ((VarCharVector) vector).set(data.count, rowMeta.getString(row, index)
                 .getBytes(StandardCharsets.UTF_8));
       } else {
         throw new HopValueException(this + " - encountered unsupported vector type: " + vector.getClass());
@@ -149,7 +147,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
     data.vectors = new FieldVector[] {};
     putRow(data.outputRowMeta, outputRow);
 
-    logBasic("encoded " + data.count + " rows into Arrow Vectors");
+    logDetailed("encoded " + data.count + " rows into Arrow Vectors");
 
     // Prepare for the next batch
     data.count = 0;

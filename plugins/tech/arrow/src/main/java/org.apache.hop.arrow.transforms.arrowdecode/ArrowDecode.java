@@ -3,19 +3,17 @@ package org.apache.hop.arrow.transforms.arrowdecode;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.RowDataUtil;
 import org.apache.hop.core.row.value.ValueMetaArrowVectors;
-import org.apache.hop.core.row.value.ValueMetaFactory;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
 import org.apache.hop.pipeline.transform.BaseTransform;
 import org.apache.hop.pipeline.transform.TransformMeta;
 
-import java.util.Arrays;
-import java.util.List;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
 
 public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData> {
   /**
@@ -69,9 +67,11 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
                         + valueMeta.getTypeDesc());
       }
       data.arrowValueMeta = (ValueMetaArrowVectors) valueMeta;
-      data.vectorIndices = new int[meta.getTargetFields().size()];
+      data.vectorMapping = new HashMap<>();
     }
 
+    // Get a reference to our vectors. Bail if we have none or garbage.
+    //
     FieldVector[] vectors = (FieldVector[]) row[data.inputIndex];
     if (vectors == null || vectors.length == 0) {
       throw new HopException("No vectors provided");
@@ -79,33 +79,31 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     int rowCount = vectors[0].getValueCount();
     if (rowCount == 0) {
       // XXX bail out?
+      logError("empty vector?");
       return false;
     }
+    logDetailed("Decoding " + vectors.length + " vectors of length " + rowCount);
 
     // Build a mapping between the incoming vectors and the outgoing fields if this
     // is our first batch.
     //
-    /*
     if (first) {
       first = false;
-      for (int j = 0; j < data.vectorIndices.length; j++) {
-        int index = -1;
-
-        for (int n = 0; n < vectors.length; n++) {
-          String vectorName = vectors[n].getName();
-          String srcFieldName = resolve(meta.get)
-          if (name.equals(meta.getTargetFields().get(j).getSourceField())) {
-            index = n;
+      for (TargetField targetField : meta.getTargetFields()) {
+        String fieldName = resolve(targetField.getSourceField());
+        for (FieldVector vector : vectors) {
+          if (vector.getName().equals(fieldName)) {
+            data.vectorMapping.put(fieldName, new WeakReference<>(vector));
             break;
           }
         }
-        data.vectorIndices[j] = index;
       }
-    }*/
+    }
 
+    // Decode!
     //
     for (int i = 0; i < rowCount; i++) {
-      Object[] outputRow = convertToRow(i, row, vectors, data.vectorIndices);
+      Object[] outputRow = convertToRow(i, row);
       putRow(data.outputRowMeta, outputRow);
     }
 
@@ -125,37 +123,42 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
    *
    * @param rowNum row index in the Arrow Vectors
    * @param inputRow incoming Hop row
-   * @param vectors array of Arrow Vectors
-   * @param indices int array mapping of...
    * @return new Hop row of Objects
    */
-  private Object[] convertToRow(int rowNum, Object[] inputRow, FieldVector[] vectors, int[] indices) throws HopException {
+  private Object[] convertToRow(int rowNum, Object[] inputRow) throws HopException {
     Object[] outputRow = RowDataUtil.createResizedCopy(inputRow, data.outputRowMeta.size());
 
     // ...and append new fields.
     //
-    int rowIndex = getInputRowMeta().size();
+    int endOfRow = getInputRowMeta().size() + 1;
 
     for (TargetField targetField : meta.getTargetFields()) {
       String srcFieldName = resolve(targetField.getSourceField());
+      String outFieldName = resolve(targetField.getTargetFieldName());
 
-      // XXX This section is redundantly called.
-      FieldVector vector = Arrays.stream(vectors)
-              .filter(v -> v.getName().equalsIgnoreCase(srcFieldName))
-              .findFirst()
-              .get(); // XXX yolo
-      Object hopValue = vector.getObject(rowNum);
-      IValueMeta standardValueMeta =
-              ValueMetaFactory.createValueMeta("standard", getStandardHopType(vector.getField()));
-      IValueMeta targetValueMeta = targetField.createTargetValueMeta(this);
-      standardValueMeta.setConversionMask(targetValueMeta.getConversionMask());
+      log.logDetailed("decoding row " + rowNum + " of " + srcFieldName + " to " + outFieldName);
 
-      outputRow[rowIndex++] = targetValueMeta.convertData(standardValueMeta, hopValue);
+      FieldVector vector = data.vectorMapping
+              .getOrDefault(
+                      srcFieldName,
+                      new WeakReference<>(null))
+              .get();
+      if (vector == null) {
+        throw new HopException("Failed to find source field " + srcFieldName + " in vector map");
+      }
+
+      Object value = vector.getObject(rowNum);
+
+      int outIndex = data.outputRowMeta.indexOfValue(outFieldName);
+      if (outIndex < 0) {
+        // Append new field
+        outputRow[endOfRow] = value;
+        endOfRow++;
+      } else {
+        // Replace existing field
+        outputRow[outIndex] = value;
+      }
     }
-
-    // We overwrite the original Arrow object...
-    //
-    outputRow[data.inputIndex] = new FieldVector[0]; // XXX use null?
 
     return outputRow;
   }
