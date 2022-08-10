@@ -6,6 +6,7 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hop.core.Const;
+import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.value.ValueMetaArrowVectors;
@@ -275,24 +276,27 @@ public class ArrowDecodeDialog extends BaseTransformDialog implements ITransform
       }
 
       if (fieldsMap.isEmpty()) {
-        // Sorry, we can't do anything...
-        return;
+        new ErrorDialog(shell, "Error", "Could not find source Arrow fields.",
+            new HopTransformException("No Arrow value found for source field " + fieldName));
       }
 
       List<String> names = new ArrayList<>(fieldsMap.keySet());
       names.sort(Comparator.comparing(String::toLowerCase));
       for (String name : names) {
         Field field = fieldsMap.get(name);
-        String typeDesc = StringUtil.initCap(field.getFieldType().toString());
         int hopType = ArrowDecode.getStandardHopType(field);
         String hopTypeDesc = ValueMetaFactory.getValueMetaName(hopType);
 
         TableItem item = new TableItem(wFields.table, SWT.NONE);
-        item.setText(1, Const.NVL(field.getName(), ""));
-        item.setText(2, typeDesc);
-        item.setText(3, Const.NVL(field.getName(), ""));
-        item.setText(4, hopTypeDesc);
+        int col = 1;
+        item.setText(col++, Const.NVL(field.getName(), ""));
+        item.setText(col++, Const.NVL(field.getName(), ""));
+        item.setText(col++, hopTypeDesc);
+        item.setText(col++, ""); // Format
+        item.setText(col++, ""); // Length
+        item.setText(col, ""); // Precision
       }
+
       wFields.optimizeTableView();
 
     } catch (Exception e) {

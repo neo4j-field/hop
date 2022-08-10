@@ -1,6 +1,9 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
 import java.lang.ref.WeakReference;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.HashMap;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -143,6 +146,11 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
 
       Object value = vector.getObject(rowNum);
 
+      // XXX Temporary workaround because Arrow uses LocalDateTime, but Hop wants Date
+      if (value instanceof LocalDateTime) {
+        value = new Date(((LocalDateTime) value).toEpochSecond(ZoneOffset.UTC));
+      }
+
       int outIndex = data.outputRowMeta.indexOfValue(outFieldName);
       if (outIndex < 0) {
         // Append new field
@@ -169,8 +177,12 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
         return IValueMeta.TYPE_NUMBER;
       case Bool:
         return IValueMeta.TYPE_BOOLEAN;
+      case Date:
+        return IValueMeta.TYPE_DATE;
+      case Timestamp:
+        return IValueMeta.TYPE_TIMESTAMP;
       default:
-        throw new HopException("Arrow type " + typeId + " is not handled yet.");
+        throw new HopException("Arrow type '" + typeId + "' is not handled yet.");
     }
   }
 }

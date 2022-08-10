@@ -1,14 +1,19 @@
 package org.apache.hop.arrow.transforms.arrowencode;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import org.apache.arrow.vector.*;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowDataUtil;
+import org.apache.hop.core.row.value.ValueMetaTimestamp;
 import org.apache.hop.core.util.ArrowBufferAllocator;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -126,9 +131,18 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
         ((Float4Vector) vector).set(data.count, rowMeta.getNumber(row, index).floatValue());
       } else if (vector instanceof Float8Vector) {
         ((Float8Vector) vector).set(data.count, rowMeta.getNumber(row, index));
+      } else if (vector instanceof BitVector) {
+        ((BitVector) vector).set(data.count, rowMeta.getInteger(row, index).intValue());
       } else if (vector instanceof VarCharVector) {
         ((VarCharVector) vector)
             .set(data.count, rowMeta.getString(row, index).getBytes(StandardCharsets.UTF_8));
+      } else if (vector instanceof DateMilliVector) {
+        ((DateMilliVector) vector)
+            .set(data.count, rowMeta.getDate(row, index).toInstant().toEpochMilli());
+      } else if (vector instanceof TimeNanoVector) {
+        Instant instant = rowMeta.getDate(row, index).toInstant();
+        long nanos = instant.getEpochSecond() + instant.getNano();
+        ((TimeNanoVector) vector).set(data.count, nanos);
       } else {
         throw new HopValueException(
             this + " - encountered unsupported vector type: " + vector.getClass());

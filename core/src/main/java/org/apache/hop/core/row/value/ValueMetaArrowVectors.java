@@ -40,7 +40,7 @@ public class ValueMetaArrowVectors extends ValueMetaBase implements IValueMeta {
   }
 
   public ValueMetaArrowVectors(String name, Schema schema) {
-    this(name);
+    super(name, IValueMeta.TYPE_ARROW);
     this.schema = schema;
   }
 
@@ -186,7 +186,7 @@ public class ValueMetaArrowVectors extends ValueMetaBase implements IValueMeta {
       //
       if (schema == null) {
         throw new HopFileException(
-            "An Avro schema is needed to read a GenericRecord from an input stream");
+            "An Arrow schema is needed to read Arrow Vectors from an input stream");
       }
 
       BufferAllocator allocator = ArrowBufferAllocator.rootAllocator();

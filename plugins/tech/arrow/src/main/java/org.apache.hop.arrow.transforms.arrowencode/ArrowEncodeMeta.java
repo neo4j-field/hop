@@ -2,6 +2,9 @@ package org.apache.hop.arrow.transforms.arrowencode;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.arrow.vector.types.DateUnit;
+import org.apache.arrow.vector.types.FloatingPointPrecision;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -66,13 +69,26 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
 
       ArrowType type;
       switch (valueMeta.getType()) {
-          // TODO broaden value type support
         case IValueMeta.TYPE_INTEGER:
-          // TODO int field precision and sign
+          // TODO int field precision and sign?
           type = new ArrowType.Int(64, true);
+          break;
+        case IValueMeta.TYPE_BOOLEAN:
+          type = new ArrowType.Bool();
+          break;
+        case IValueMeta.TYPE_NUMBER:
+          type = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE);
           break;
         case IValueMeta.TYPE_STRING:
           type = new ArrowType.Utf8();
+          break;
+        case IValueMeta.TYPE_TIMESTAMP:
+          type = new ArrowType.Timestamp(
+              TimeUnit.NANOSECOND,
+              valueMeta.getDateFormatTimeZone().getDisplayName());
+          break;
+        case IValueMeta.TYPE_DATE:
+          type = new ArrowType.Date(DateUnit.MILLISECOND);
           break;
         default:
           throw new HopException(

@@ -2,6 +2,7 @@ package org.apache.hop.arrow.transforms.arrowencode;
 
 import org.apache.hop.core.Const;
 import org.apache.hop.core.row.IRowMeta;
+import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
@@ -14,6 +15,7 @@ import org.apache.hop.ui.core.widget.ColumnInfo;
 import org.apache.hop.ui.core.widget.TableView;
 import org.apache.hop.ui.core.widget.TextVar;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
+import org.apache.hop.ui.pipeline.transform.ITableItemInsertListener;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
@@ -203,7 +205,17 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
     try {
       IRowMeta r = pipelineMeta.getPrevTransformFields(variables, transformName);
       BaseTransformDialog.getFieldsFromPrevious(
-          r, wFields, 1, new int[] {1}, new int[] {}, -1, -1, null);
+          r, wFields, 1, new int[]{1}, new int[]{}, -1, -1, new ITableItemInsertListener() {
+            @Override
+            public boolean tableItemInserted(TableItem tableItem, IValueMeta v) {
+              String sourceFieldName = v.getName();
+              String targetFieldName = v.getName();
+              tableItem.setText(1, sourceFieldName);
+              tableItem.setText(2, targetFieldName);
+
+              return true;
+            }
+          });
     } catch (Exception e) {
       new ErrorDialog(shell, "Error", "Error getting fields", e);
     }
