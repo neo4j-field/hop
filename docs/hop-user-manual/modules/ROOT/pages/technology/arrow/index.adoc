@@ -24,8 +24,7 @@ From https://arrow.apache.org[arrow.apache.org]:
 
 Apache Arrow™ is a data serialization system. To learn more about Arrow, please read the https://arrow.apache.org/docs/index.html[current documentation].
 
-Hop supports Arrow through a number of plugins.
-...
+Hop supports Arrow through a number of transforms:
 
 == Pipeline Transforms
 

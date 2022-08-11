@@ -25,7 +25,9 @@ under the License.
 |
 == Description
 
-The Arrow Encode transform allows you to encode a new Arrow Record field using a selection of Hop fields.   The Arrow schema will be part of the value metadata for this Arrow Record field.
+The Arrow Encode transform allows you to encode one or many rows of Hop fields into an array of Arrow Vectors. The Arrow schema will be chosen based off the original Hop data type.
+
+The encoded vectors can then be decoded using the xref:./arrow-decode.adoc[Arrow Decode] transformer.
 |
 == Supported Engines
 [%noheader,cols="2,1a",frame=none, role="table-supported-engines"]
@@ -48,6 +50,9 @@ The Arrow Encode transform allows you to encode a new Arrow Record field using a
 |Transform name
 |Name of the transform.
 Note: This name has to be unique in a single pipeline.
+
+|Batch size
+|Maximum length of the Arrow Vectors. Must be a non-zero, positive number.
 
 |Output field name
 |Choose a name for the Arrow Record output field.

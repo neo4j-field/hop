@@ -25,7 +25,7 @@ under the License.
 |
 == Description
 
-The Arrow Decode transform allows you to decode an Arrow field and convert it to Hop fields.
+The Arrow Decode transform allows you to decode a field containing an array of Arrow Vectors and convert it into one or many Hop rows.
 |
 == Supported Engines
 [%noheader,cols="2,1a",frame=none, role="table-supported-engines"]
