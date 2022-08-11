@@ -18,16 +18,14 @@ import org.apache.hop.pipeline.transform.TransformMeta;
 
 public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData> {
 
-  private int batchSize = 10_000;
-
   /**
    * Encode Hop Rows into an Arrow RecordBatch of Arrow Vectors.
    *
    * @param transformMeta The TransformMeta object to run.
-   * @param meta
+   * @param meta the ArrowEncodeMeta describing the configuration of this transform
    * @param data the data object to store temporary data, database connections, caches, result sets,
    *     hashtables etc.
-   * @param copyNr The copynumber for this transform.
+   * @param copyNr The copynumber for this transform. (Currently unused.)
    * @param pipelineMeta The PipelineMeta of which the transform transformMeta is part of.
    * @param pipeline The (running) pipeline to obtain information shared among the transforms.
    */
@@ -80,7 +78,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
       // Build the Arrow schema.
       //
       data.arrowSchema = meta.createArrowSchema(getInputRowMeta(), meta.getSourceFields());
-      log.logDetailed("Schema: " + data.arrowSchema);
+      log.logDetailed("Arrow schema: " + data.arrowSchema);
 
       initializeVectors();
       data.batches = 0;
@@ -91,7 +89,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
 
     // Flush and reinitialize if we're at the limit.
     //
-    if (data.count == batchSize) {
+    if (data.count == meta.getBatchSize()) {
       flush();
       initializeVectors();
     }
@@ -105,7 +103,9 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
             .map(
                 field -> {
                   FieldVector vector = field.createVector(ArrowBufferAllocator.rootAllocator());
-                  vector.setInitialCapacity(batchSize);
+                  // For small batch sizes, keep some overhead as the initial capacity estimates
+                  // can under-size the Arrow buffers.
+                  vector.setInitialCapacity(Math.max(meta.getBatchSize(), 1_000));
                   vector.allocateNewSafe();
                   return vector;
                 })
@@ -131,6 +131,9 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
       } else if (vector instanceof BitVector) {
         ((BitVector) vector).set(data.count, rowMeta.getInteger(row, index).intValue());
       } else if (vector instanceof VarCharVector) {
+        // XXX Should we simply getBinary() instead?
+        // XXX The use of .set() for variable length byte arrays (i.e. strings) is a tad
+        //     dangerous as we could overflow our Arrow Buffers causing failure.
         ((VarCharVector) vector)
             .set(data.count, rowMeta.getString(row, index).getBytes(StandardCharsets.UTF_8));
       } else if (vector instanceof DateMilliVector) {
@@ -148,6 +151,13 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
     data.count++;
   }
 
+  /**
+   * Flush the current batch of Arrow Vectors to the output stream.
+   *
+   * <p>Resets the counter to zero and increments the batch counter.
+   *
+   * @throws HopTransformException
+   */
   private void flush() throws HopTransformException {
     // Finalize the vectors by setting their value counts
     Arrays.stream(data.vectors).forEach(v -> v.setValueCount(data.count));

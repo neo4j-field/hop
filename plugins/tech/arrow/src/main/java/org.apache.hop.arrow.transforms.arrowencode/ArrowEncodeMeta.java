@@ -38,6 +38,9 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
   @HopMetadataProperty(groupKey = "fields", key = "field")
   private List<SourceField> sourceFields = List.of();
 
+  @HopMetadataProperty(key = "batch_size")
+  private int batchSize = 10_000;
+
   @Override
   public void getFields(
       IRowMeta rowMeta,
@@ -117,5 +120,13 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
 
   public void setSourceFields(List<SourceField> sourceFields) {
     this.sourceFields = sourceFields;
+  }
+
+  public int getBatchSize() {
+    return batchSize;
+  }
+
+  public void setBatchSize(int batchSize) {
+    this.batchSize = batchSize;
   }
 }

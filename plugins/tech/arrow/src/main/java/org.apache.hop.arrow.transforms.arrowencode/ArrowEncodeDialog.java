@@ -1,6 +1,8 @@
 package org.apache.hop.arrow.transforms.arrowencode;
 
 import org.apache.hop.core.Const;
+import org.apache.hop.core.exception.HopException;
+import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.util.Utils;
@@ -28,6 +30,7 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
   private final ArrowEncodeMeta input;
 
   private TextVar wOutputField;
+  private TextVar wBatchSizeField;
   private TableView wFields;
 
   public ArrowEncodeDialog(
@@ -109,6 +112,24 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
     wOutputField.setLayoutData(fdOutputField);
     lastControl = wOutputField;
 
+    Label wlBatchSize = new Label(shell, SWT.RIGHT);
+    wlBatchSize.setText(BaseMessages.getString(PKG, "ArrowEncodeDialog.BatchSize.Label"));
+    props.setLook(wlBatchSize);
+    FormData fdlBatchSize = new FormData();
+    fdlBatchSize.left = new FormAttachment(0, 0);
+    fdlBatchSize.right = new FormAttachment(middle, -margin);
+    fdlBatchSize.top = new FormAttachment(lastControl, margin);
+    wlBatchSize.setLayoutData(fdlBatchSize);
+    wBatchSizeField = new TextVar(variables, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER);
+    wBatchSizeField.setText(String.valueOf(input.getBatchSize()));
+    props.setLook(wBatchSizeField);
+    FormData fdBatchSizeField = new FormData();
+    fdBatchSizeField.left = new FormAttachment(middle, 0);
+    fdBatchSizeField.top = new FormAttachment(wlBatchSize, 0, SWT.CENTER);
+    fdBatchSizeField.right = new FormAttachment(100, 0);
+    wBatchSizeField.setLayoutData(fdBatchSizeField);
+    lastControl = wBatchSizeField;
+
     Label wlFields = new Label(shell, SWT.RIGHT);
     wlFields.setText(BaseMessages.getString(PKG, "ArrowEncodeDialog.Fields.Label"));
     props.setLook(wlFields);
@@ -180,23 +201,31 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
   }
 
   private void ok() {
-    if (Utils.isEmpty(wTransformName.getText())) {
-      return;
+    try {
+      if (Utils.isEmpty(wTransformName.getText())) {
+        return;
+      }
+
+      input.setOutputFieldName(wOutputField.getText());
+
+      int batchSize = Const.toInt(wBatchSizeField.getText(), -1);
+      if (batchSize < 1) {
+        throw new HopValueException("Invalid batch size (" + batchSize + "). Value must be >= 1.");
+      }
+      input.setBatchSize(batchSize);
+
+      input.getSourceFields().clear();
+      for (TableItem item : wFields.getNonEmptyItems()) {
+        String sourceField = item.getText(1);
+        String targetField = item.getText(2);
+        input.getSourceFields().add(new SourceField(sourceField, targetField));
+      }
+
+      transformName = wTransformName.getText(); // return value
+      transformMeta.setChanged();
+    } catch (HopException e) {
+      new ErrorDialog(shell, "Error", "Invalid configuration provided.", e);
     }
-
-    input.setOutputFieldName(wOutputField.getText());
-
-    input.getSourceFields().clear();
-    for (TableItem item : wFields.getNonEmptyItems()) {
-      int col = 1;
-      String sourceField = item.getText(col++);
-      String targetField = item.getText(col++);
-      input.getSourceFields().add(new SourceField(sourceField, targetField));
-    }
-
-    transformName = wTransformName.getText(); // return value
-    transformMeta.setChanged();
-
     dispose();
   }
 
