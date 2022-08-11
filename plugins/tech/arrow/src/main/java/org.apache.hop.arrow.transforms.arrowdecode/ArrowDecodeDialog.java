@@ -11,7 +11,6 @@ import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.IValueMeta;
 import org.apache.hop.core.row.value.ValueMetaArrowVectors;
 import org.apache.hop.core.row.value.ValueMetaFactory;
-import org.apache.hop.core.util.StringUtil;
 import org.apache.hop.core.util.Utils;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.i18n.BaseMessages;
@@ -276,7 +275,10 @@ public class ArrowDecodeDialog extends BaseTransformDialog implements ITransform
       }
 
       if (fieldsMap.isEmpty()) {
-        new ErrorDialog(shell, "Error", "Could not find source Arrow fields.",
+        new ErrorDialog(
+            shell,
+            "Error",
+            "Could not find source Arrow fields.",
             new HopTransformException("No Arrow value found for source field " + fieldName));
       }
 

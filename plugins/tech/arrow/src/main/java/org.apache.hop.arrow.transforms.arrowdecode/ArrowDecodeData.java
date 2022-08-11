@@ -1,8 +1,6 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
-import java.lang.ref.WeakReference;
 import java.util.Map;
-import org.apache.arrow.vector.FieldVector;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.value.ValueMetaArrowVectors;
 import org.apache.hop.pipeline.transform.BaseTransformData;
@@ -15,5 +13,5 @@ public class ArrowDecodeData extends BaseTransformData implements ITransformData
 
   public ValueMetaArrowVectors arrowValueMeta;
 
-  public Map<String, WeakReference<FieldVector>> vectorMapping = Map.of();
+  public Map<String, Integer> vectorMapping = Map.of();
 }

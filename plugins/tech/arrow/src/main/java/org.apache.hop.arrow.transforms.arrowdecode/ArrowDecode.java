@@ -1,6 +1,5 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
-import java.lang.ref.WeakReference;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -74,15 +73,14 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
     //
     FieldVector[] vectors = (FieldVector[]) row[data.inputIndex];
     if (vectors == null || vectors.length == 0) {
-      throw new HopException("No vectors provided");
+      throw new HopException("No vectors provided.");
     }
     int rowCount = vectors[0].getValueCount();
     if (rowCount == 0) {
       // XXX bail out?
-      logError("empty vector?");
+      logError("Empty vector: " + vectors[0]);
       return false;
     }
-    logDetailed("Decoding " + vectors.length + " vectors of length " + rowCount);
 
     // Build a mapping between the incoming vectors and the outgoing fields if this
     // is our first batch.
@@ -91,9 +89,9 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       first = false;
       for (TargetField targetField : meta.getTargetFields()) {
         String fieldName = resolve(targetField.getSourceField());
-        for (FieldVector vector : vectors) {
-          if (vector.getName().equals(fieldName)) {
-            data.vectorMapping.put(fieldName, new WeakReference<>(vector));
+        for (int i = 0; i < vectors.length; i++) {
+          if (vectors[i].getName().equals(fieldName)) {
+            data.vectorMapping.put(fieldName, i);
             break;
           }
         }
@@ -102,8 +100,8 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
 
     // Decode!
     //
-    for (int i = 0; i < rowCount; i++) {
-      Object[] outputRow = convertToRow(i, row);
+    for (int rowNum = 0; rowNum < rowCount; rowNum++) {
+      Object[] outputRow = convertToRow(vectors, rowNum, row);
       putRow(data.outputRowMeta, outputRow);
     }
 
@@ -113,7 +111,7 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       vector.close();
     }
 
-    logBasic("decoded " + rowCount + " rows from Arrow vectors");
+    logDetailed("decoded " + rowCount + " rows from Arrow vectors");
 
     return true;
   }
@@ -125,7 +123,8 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
    * @param inputRow incoming Hop row
    * @return new Hop row of Objects
    */
-  private Object[] convertToRow(int rowNum, Object[] inputRow) throws HopException {
+  private Object[] convertToRow(FieldVector[] vectors, int rowNum, Object[] inputRow)
+      throws HopException {
     Object[] outputRow = RowDataUtil.createResizedCopy(inputRow, data.outputRowMeta.size());
 
     // ...and append new fields.
@@ -136,14 +135,11 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       String srcFieldName = resolve(targetField.getSourceField());
       String outFieldName = resolve(targetField.getTargetFieldName());
 
-      log.logDetailed("decoding row " + rowNum + " of " + srcFieldName + " to " + outFieldName);
-
-      FieldVector vector =
-          data.vectorMapping.getOrDefault(srcFieldName, new WeakReference<>(null)).get();
-      if (vector == null) {
+      int vectorIndex = data.vectorMapping.getOrDefault(srcFieldName, -1);
+      if (vectorIndex < 0) {
         throw new HopException("Failed to find source field " + srcFieldName + " in vector map");
       }
-
+      FieldVector vector = vectors[vectorIndex];
       Object value = vector.getObject(rowNum);
 
       // XXX Temporary workaround because Arrow uses LocalDateTime, but Hop wants Date

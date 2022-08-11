@@ -83,9 +83,9 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
           type = new ArrowType.Utf8();
           break;
         case IValueMeta.TYPE_TIMESTAMP:
-          type = new ArrowType.Timestamp(
-              TimeUnit.NANOSECOND,
-              valueMeta.getDateFormatTimeZone().getDisplayName());
+          type =
+              new ArrowType.Timestamp(
+                  TimeUnit.NANOSECOND, valueMeta.getDateFormatTimeZone().getDisplayName());
           break;
         case IValueMeta.TYPE_DATE:
           type = new ArrowType.Date(DateUnit.MILLISECOND);

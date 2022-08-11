@@ -1,19 +1,15 @@
 package org.apache.hop.arrow.transforms.arrowencode;
 
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import org.apache.arrow.vector.*;
 import org.apache.hop.core.exception.HopException;
 import org.apache.hop.core.exception.HopTransformException;
 import org.apache.hop.core.exception.HopValueException;
 import org.apache.hop.core.row.IRowMeta;
 import org.apache.hop.core.row.RowDataUtil;
-import org.apache.hop.core.row.value.ValueMetaTimestamp;
 import org.apache.hop.core.util.ArrowBufferAllocator;
 import org.apache.hop.pipeline.Pipeline;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -55,6 +51,7 @@ public class ArrowEncode extends BaseTransform<ArrowEncodeMeta, ArrowEncodeData>
         flush();
       }
       setOutputDone();
+      logDetailed(this + " sent " + data.batches + " batch(es)");
       return false;
     }
 

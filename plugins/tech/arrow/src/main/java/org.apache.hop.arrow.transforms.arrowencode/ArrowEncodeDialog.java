@@ -205,7 +205,14 @@ public class ArrowEncodeDialog extends BaseTransformDialog implements ITransform
     try {
       IRowMeta r = pipelineMeta.getPrevTransformFields(variables, transformName);
       BaseTransformDialog.getFieldsFromPrevious(
-          r, wFields, 1, new int[]{1}, new int[]{}, -1, -1, new ITableItemInsertListener() {
+          r,
+          wFields,
+          1,
+          new int[] {1},
+          new int[] {},
+          -1,
+          -1,
+          new ITableItemInsertListener() {
             @Override
             public boolean tableItemInserted(TableItem tableItem, IValueMeta v) {
               String sourceFieldName = v.getName();
