@@ -1,5 +1,6 @@
 package org.apache.hop.arrow.transforms.arrowdecode;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -142,9 +143,9 @@ public class ArrowDecode extends BaseTransform<ArrowDecodeMeta, ArrowDecodeData>
       FieldVector vector = vectors[vectorIndex];
       Object value = vector.getObject(rowNum);
 
-      // XXX Temporary workaround because Arrow uses LocalDateTime, but Hop wants Date
+      // XXX Temporary workaround because Arrow uses LocalDateTime, but Hop wants Date.
       if (value instanceof LocalDateTime) {
-        value = new Date(((LocalDateTime) value).toEpochSecond(ZoneOffset.UTC));
+        value = new Date(((LocalDateTime) value).toInstant(ZoneOffset.UTC).toEpochMilli());
       }
 
       int outIndex = data.outputRowMeta.indexOfValue(outFieldName);
