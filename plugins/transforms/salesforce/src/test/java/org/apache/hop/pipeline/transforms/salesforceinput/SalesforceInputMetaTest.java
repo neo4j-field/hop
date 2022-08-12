@@ -252,11 +252,14 @@ public class SalesforceInputMetaTest {
 
     @Override
     public SalesforceInputField getTestObject() {
+      String[] valueMetaNames = ValueMetaFactory.getAllValueMetaNames();
+      String typeName = valueMetaNames[rnd.nextInt(valueMetaNames.length)];
+
       SalesforceInputField retval = new SalesforceInputField();
       retval.setName(UUID.randomUUID().toString());
       retval.setField(UUID.randomUUID().toString());
       retval.setIdLookup(rnd.nextBoolean());
-      retval.setType(rnd.nextInt(ValueMetaFactory.getAllValueMetaNames().length));
+      retval.setType(ValueMetaFactory.getIdForValueMeta(typeName));
       retval.setFormat(UUID.randomUUID().toString());
       retval.setCurrencySymbol(UUID.randomUUID().toString());
       retval.setDecimalSymbol(UUID.randomUUID().toString());
