@@ -110,7 +110,7 @@ public class FieldSplitterMetaTest {
     fieldLoadSaveValidatorAttributeMap.put(
         "type",
         new PrimitiveIntArrayLoadSaveValidator(
-            new IntLoadSaveValidator(ValueMetaFactory.getAllValueMetaNames().length), 5));
+            new MetaTypeIdLoadSaveValidator(), 5));
     fieldLoadSaveValidatorAttributeMap.put(
         "format", new ArrayLoadSaveValidator<>(new StringLoadSaveValidator(), 5));
     fieldLoadSaveValidatorAttributeMap.put(
