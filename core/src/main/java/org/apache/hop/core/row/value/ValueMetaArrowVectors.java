@@ -32,7 +32,7 @@ public class ValueMetaArrowVectors extends ValueMetaBase implements IValueMeta {
   private Schema schema;
 
   public ValueMetaArrowVectors() {
-    super(null, IValueMeta.TYPE_ARROW);
+    this(null);
   }
 
   public ValueMetaArrowVectors(String name) {
