@@ -315,6 +315,16 @@ public class ValueMetaFactoryTest {
     assertEquals("testInternetAddress", testObject.getName());
     assertEquals(10, testObject.getLength());
     assertEquals(20, testObject.getPrecision());
+
+    testObject =
+        ValueMetaFactory.createValueMeta("testArrowVectors", IValueMeta.TYPE_ARROW);
+    assertTrue(testObject instanceof ValueMetaArrowVectors);
+    assertEquals("testArrowVectors", testObject.getName());
+
+    testObject =
+        ValueMetaFactory.createValueMeta("testAvroRecord", IValueMeta.TYPE_AVRO);
+    assertTrue(testObject instanceof ValueMetaAvroRecord);
+    assertEquals("testAvroRecord", testObject.getName());
   }
 
   @Test
@@ -347,6 +357,8 @@ public class ValueMetaFactoryTest {
     assertTrue(dataTypes.contains("Binary"));
     assertTrue(dataTypes.contains("Timestamp"));
     assertTrue(dataTypes.contains("Internet Address"));
+    assertTrue(dataTypes.contains("Arrow Vectors"));
+    assertTrue(dataTypes.contains("Avro Record"));
   }
 
   @Test
@@ -363,6 +375,8 @@ public class ValueMetaFactoryTest {
     assertEquals("Binary", ValueMetaFactory.getValueMetaName(IValueMeta.TYPE_BINARY));
     assertEquals("Timestamp", ValueMetaFactory.getValueMetaName(IValueMeta.TYPE_TIMESTAMP));
     assertEquals("Internet Address", ValueMetaFactory.getValueMetaName(IValueMeta.TYPE_INET));
+    assertEquals("Arrow Vectors", ValueMetaFactory.getValueMetaName(IValueMeta.TYPE_ARROW));
+    assertEquals("Avro Record", ValueMetaFactory.getValueMetaName(IValueMeta.TYPE_AVRO));
   }
 
   @Test
@@ -380,6 +394,8 @@ public class ValueMetaFactoryTest {
     assertEquals(IValueMeta.TYPE_BINARY, ValueMetaFactory.getIdForValueMeta("Binary"));
     assertEquals(IValueMeta.TYPE_TIMESTAMP, ValueMetaFactory.getIdForValueMeta("Timestamp"));
     assertEquals(IValueMeta.TYPE_INET, ValueMetaFactory.getIdForValueMeta("Internet Address"));
+    assertEquals(IValueMeta.TYPE_ARROW, ValueMetaFactory.getIdForValueMeta("Arrow Vectors"));
+    assertEquals(IValueMeta.TYPE_AVRO, ValueMetaFactory.getIdForValueMeta("Avro Record"));
   }
 
   @Test
@@ -396,6 +412,8 @@ public class ValueMetaFactoryTest {
     boolean binaryExists = false;
     boolean timestampExists = false;
     boolean inetExists = false;
+    boolean arrowExists = false;
+    boolean avroExists = false;
 
     for (IValueMeta obj : dataTypes) {
       if (obj instanceof ValueMetaNumber) {
@@ -428,6 +446,12 @@ public class ValueMetaFactoryTest {
       if (obj.getClass().equals(ValueMetaInternetAddress.class)) {
         inetExists = true;
       }
+      if (obj.getClass().equals(ValueMetaArrowVectors.class)) {
+        arrowExists = true;
+      }
+      if (obj.getClass().equals(ValueMetaAvroRecord.class)) {
+        avroExists = true;
+      }
     }
 
     assertTrue(numberExists);
@@ -440,6 +464,8 @@ public class ValueMetaFactoryTest {
     assertTrue(binaryExists);
     assertTrue(timestampExists);
     assertTrue(inetExists);
+    assertTrue(arrowExists);
+    assertTrue(avroExists);
   }
 
   @Test
