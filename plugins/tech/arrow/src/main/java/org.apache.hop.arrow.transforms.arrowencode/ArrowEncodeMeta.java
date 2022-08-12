@@ -70,40 +70,48 @@ public class ArrowEncodeMeta extends BaseTransformMeta<ArrowEncode, ArrowEncodeD
       IValueMeta valueMeta = inputRowMeta.getValueMeta(i);
       String name = sourceFields.get(i).calculateTargetFieldName();
 
-      ArrowType type;
-      switch (valueMeta.getType()) {
-        case IValueMeta.TYPE_INTEGER:
-          // TODO int field precision and sign?
-          type = new ArrowType.Int(64, true);
-          break;
-        case IValueMeta.TYPE_BOOLEAN:
-          type = new ArrowType.Bool();
-          break;
-        case IValueMeta.TYPE_NUMBER:
-          type = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE);
-          break;
-        case IValueMeta.TYPE_STRING:
-          type = new ArrowType.Utf8();
-          break;
-        case IValueMeta.TYPE_TIMESTAMP:
-          type =
-              new ArrowType.Timestamp(
-                  TimeUnit.NANOSECOND, valueMeta.getDateFormatTimeZone().getDisplayName());
-          break;
-        case IValueMeta.TYPE_DATE:
-          type = new ArrowType.Date(DateUnit.MILLISECOND);
-          break;
-        default:
-          throw new HopException(
-              "Writing Hop data type '" + valueMeta.getTypeDesc() + "' to Arrow is not supported");
+      if (valueMeta != null) {
+        arrowFields.add(createFieldFromValueMeta(valueMeta, name));
+      } else {
+        // XXX shrug?
+        throw new HopException("No value meta for field " + name);
       }
-
-      // Nested types (i.e. with children) are not currently supported.
-      //
-      arrowFields.add(new Field(name, FieldType.nullable(type), null));
     }
 
     return new Schema(arrowFields);
+  }
+
+  private Field createFieldFromValueMeta(IValueMeta valueMeta, String name) throws HopException {
+
+    ArrowType type;
+    switch (valueMeta.getType()) {
+      case IValueMeta.TYPE_INTEGER:
+        // TODO int field precision and sign?
+        type = new ArrowType.Int(64, true);
+        break;
+      case IValueMeta.TYPE_BOOLEAN:
+        type = new ArrowType.Bool();
+        break;
+      case IValueMeta.TYPE_NUMBER:
+        type = new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE);
+        break;
+      case IValueMeta.TYPE_STRING:
+        type = new ArrowType.Utf8();
+        break;
+      case IValueMeta.TYPE_TIMESTAMP:
+        type = new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
+        break;
+      case IValueMeta.TYPE_DATE:
+        type = new ArrowType.Date(DateUnit.MILLISECOND);
+        break;
+      default:
+        throw new HopException(
+            "Writing Hop data type '" + valueMeta.getTypeDesc() + "' to Arrow is not supported");
+    }
+
+    // Nested types (i.e. with children) are not currently supported.
+    //
+    return new Field(name, FieldType.nullable(type), null);
   }
 
   public String getOutputFieldName() {
