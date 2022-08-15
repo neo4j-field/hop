@@ -18,6 +18,7 @@
 
 package org.apache.hop.core.row.value;
 
+import org.apache.arrow.vector.FieldVector;
 import org.apache.hop.core.Const;
 import org.apache.hop.core.database.DatabaseMeta;
 import org.apache.hop.core.database.IDatabase;
@@ -1921,6 +1922,15 @@ public class ValueMetaBase implements IValueMeta {
             default:
               throw new HopValueException(
                   toString() + MSG_UNKNOWN_STORAGE_TYPE + storageType + MSG_SPECIFIED);
+          }
+          break;
+
+        case TYPE_ARROW:
+          if (object != null) {
+            FieldVector[] vectors = (FieldVector[]) object;
+            string = "ArrowVectors{cnt=" + vectors.length + ", hash=" + Arrays.hashCode(vectors) + "}";
+          } else {
+            string = null;
           }
           break;
 

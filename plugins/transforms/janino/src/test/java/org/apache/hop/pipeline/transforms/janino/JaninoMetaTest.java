@@ -69,10 +69,13 @@ public class JaninoMetaTest {
     @Override
     public JaninoMetaFunction getTestObject() {
       Random random = new Random();
+      String[] valueMetaNames = ValueMetaFactory.getAllValueMetaNames();
+      String typeName = valueMetaNames[random.nextInt(valueMetaNames.length)];
+
       return new JaninoMetaFunction(
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
-          random.nextInt(ValueMetaFactory.getAllValueMetaNames().length),
+          ValueMetaFactory.getIdForValueMeta(typeName),
           random.nextInt(Integer.MAX_VALUE),
           random.nextInt(Integer.MAX_VALUE),
           UUID.randomUUID().toString());
